@@ -503,6 +503,9 @@ function getWeekStart(date) {
 }
 
 function renderCharts(chartData) {
+    // Determine if mobile
+    const isMobile = window.innerWidth < 768;
+    
     // Calories Chart
     const ctx1 = document.getElementById('caloriesChart').getContext('2d');
     if (caloriesChart) {
@@ -532,23 +535,40 @@ function renderCharts(chartData) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            aspectRatio: isMobile ? 1 : 2,
             plugins: {
                 title: {
                     display: true,
                     text: 'Calories Consumed vs Burned',
-                    font: { size: 16, weight: 'bold' }
+                    font: { size: isMobile ? 14 : 16, weight: 'bold' }
                 },
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        boxWidth: isMobile ? 12 : 40,
+                        padding: isMobile ? 10 : 15,
+                        font: { size: isMobile ? 11 : 12 }
+                    }
                 }
             },
             scales: {
+                x: {
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 },
+                        maxRotation: isMobile ? 45 : 0,
+                        minRotation: isMobile ? 45 : 0
+                    }
+                },
                 y: {
                     beginAtZero: true,
                     title: {
-                        display: true,
-                        text: 'Calories'
+                        display: !isMobile,
+                        text: 'Calories',
+                        font: { size: isMobile ? 10 : 12 }
+                    },
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 }
                     }
                 }
             }
@@ -571,32 +591,63 @@ function renderCharts(chartData) {
                 borderColor: 'rgb(37, 99, 235)',
                 borderWidth: 2,
                 tension: 0.3,
-                fill: true
+                fill: true,
+                pointRadius: isMobile ? 3 : 4,
+                pointHoverRadius: isMobile ? 5 : 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            aspectRatio: isMobile ? 1 : 2,
             plugins: {
                 title: {
                     display: true,
                     text: 'Net Calories (Consumed - Burned)',
-                    font: { size: 16, weight: 'bold' }
+                    font: { size: isMobile ? 14 : 16, weight: 'bold' }
                 },
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        boxWidth: isMobile ? 12 : 40,
+                        padding: isMobile ? 10 : 15,
+                        font: { size: isMobile ? 11 : 12 }
+                    }
                 }
             },
             scales: {
+                x: {
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 },
+                        maxRotation: isMobile ? 45 : 0,
+                        minRotation: isMobile ? 45 : 0
+                    }
+                },
                 y: {
                     beginAtZero: true,
                     title: {
-                        display: true,
-                        text: 'Net Calories'
+                        display: !isMobile,
+                        text: 'Net Calories',
+                        font: { size: isMobile ? 10 : 12 }
+                    },
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 }
                     }
                 }
             }
         }
     });
 }
+
+// Handle window resize for charts
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        const currentPage = document.querySelector('.app-page.active').id;
+        if (currentPage === 'reportsPage' && caloriesChart && netCaloriesChart) {
+            updateReports();
+        }
+    }, 250);
+});
