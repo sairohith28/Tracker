@@ -17,16 +17,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-
-        const firebaseConfig = {
-    apiKey: "AIzaSyDgsq3R_KW3mhyA_lgU0A7QAPeCqiUaSIY",
-    authDomain: "calorietracker-b00ea.firebaseapp.com",
-    projectId: "calorietracker-b00ea",
-    storageBucket: "calorietracker-b00ea.firebasestorage.app",
-    messagingSenderId: "578091401705",
-    appId: "1:578091401705:web:606824a43c72fd2e8ccb78",
-    measurementId: "G-9SLC181681"
-  };
+        import { firebaseConfig } from "./firebase-config.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
