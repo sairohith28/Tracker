@@ -11,6 +11,33 @@
     <title>Calorie Tracker</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIza_KW3mhyA_lgUSIY",
+            authDomain: "calorietracker-0ea.firebaseapp.com",
+            projectId: "calorietracker-0ea",
+            storageBucket: "calorietracker-0ea.firebasestorage.app",
+            messagingSenderId: "57705",
+            appId: "1:578091401705:web:606878",
+            measurementId: "G-91"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Make Firestore available globally
+        window.db = db;
+        window.firestoreModules = { doc, getDoc, setDoc, collection, getDocs };
+        
+        // Signal that Firebase is ready
+        window.firebaseReady = true;
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
 </head>
 <body>
     <!-- Login Page -->
