@@ -83,6 +83,60 @@ body {
     font-size: 0.938rem;
 }
 
+/* Google Sign-In Button */
+.btn-google {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-family: inherit;
+}
+
+.btn-google:hover {
+    background: var(--background);
+    box-shadow: var(--shadow);
+}
+
+.btn-google:active {
+    transform: scale(0.98);
+}
+
+/* Divider */
+.divider {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.divider span {
+    position: relative;
+    background: var(--surface);
+    padding: 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 /* Navigation - Mobile First */
 .navbar {
     background: var(--surface);

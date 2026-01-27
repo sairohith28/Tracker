@@ -4,18 +4,21 @@ A minimal, professional web application for tracking daily calories, exercise, a
 
 ## Features
 
-- 🔐 **Secure Login** - Username and password authentication
+- 🔐 **Google Sign-In** - Secure authentication with your Google account
+- 🔑 **Traditional Login** - Or use username/password
 - 📅 **Daily Tracking** - Track food and exercise with calendar navigation
 - 🎯 **Goal Management** - Set maintenance and target calories
 - 📊 **Smart Status** - Color-coded daily status with deficit/surplus calculation
 - 📈 **Reports & Analytics** - Visualize data with daily, weekly, and monthly charts
-- 💾 **Data Persistence** - All data stored locally in browser
+- ☁️ **Cloud Sync** - All data syncs across devices via Firebase
 - 🎨 **Clean UI** - Minimal, mature, and professional design
+- 📱 **Mobile-First** - Optimized for mobile devices
 
-## Default Credentials
+## Quick Start
 
-- **Username:** `admin`
-- **Password:** `admin123`
+Simply visit the app and:
+- **Sign in with Google** for instant access, or
+- Use traditional login credentials
 
 ## Usage
 
@@ -77,12 +80,18 @@ Maintenance Calories - Consumed + Burned = Deficit/Surplus
 
 ## Data Storage
 
-All data is stored in browser's localStorage:
-- User credentials
-- Daily food and exercise entries
-- Settings (maintenance and target calories)
+All data is stored in Firebase Firestore (cloud database):
+- Automatic sync across all devices
+- Access your data from any browser
+- Offline support with localStorage backup
 
-**Note:** Data is stored locally in your browser. Clearing browser data will reset the app.
+## Authentication
+
+Two sign-in methods available:
+1. **Google Sign-In** - One-click authentication with your Google account
+2. **Traditional Login** - Username and password (for development/testing)
+
+**Note:** Data is automatically synced across all your devices when using the same login method.
 
 ## File Structure
 
@@ -100,23 +109,31 @@ tracker/
 - CSS3 (Modern, responsive design)
 - Vanilla JavaScript (No frameworks)
 - Chart.js for data visualization
-- localStorage for data persistence
+- Firebase Firestore for cloud data sync
+- Firebase Authentication (Google Sign-In)
 
 ## Browser Compatibility
 
 Works on all modern browsers:
-- Chrome
+- Chrome (recommended)
 - Firefox
 - Safari
 - Edge
 
+## Security
+
+- Firebase Authentication for secure sign-in
+- Firestore security rules protect your data
+- All data is user-specific and private
+
 ## Future Enhancements
 
-- Multi-user support
+- Multi-user support with Firebase Auth
 - Data export/import
 - Meal planning
 - Nutrition macros tracking
-- Mobile app version
+- Native mobile app version
+- Social sharing features
 
 ## License
 
