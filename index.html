@@ -106,9 +106,35 @@
                     </div>
                 </div>
 
-                <!-- Status Banner -->
-                <div class="status-banner" id="statusBanner">
-                    <p id="statusText"></p>
+                <!-- Nutrition Summary -->
+                <div class="nutrition-summary-card">
+                    <h3>Nutrition Summary</h3>
+                    <div class="nutrition-summary-grid">
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalProtein">0</span>
+                            <span class="nutrition-label">Protein (g)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalCarbs">0</span>
+                            <span class="nutrition-label">Carbs (g)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalFat">0</span>
+                            <span class="nutrition-label">Fat (g)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalFiber">0</span>
+                            <span class="nutrition-label">Fiber (g)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalSugar">0</span>
+                            <span class="nutrition-label">Sugar (g)</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-value" id="totalWater">0</span>
+                            <span class="nutrition-label">Water (ml)</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Food Section -->
@@ -160,6 +186,9 @@
                 <div class="chart-container">
                     <canvas id="netCaloriesChart"></canvas>
                 </div>
+                <div class="chart-container">
+                    <canvas id="nutritionChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -201,9 +230,35 @@
                     <label for="foodCalories">Calories</label>
                     <input type="number" id="foodCalories" required min="0">
                 </div>
+                <div class="nutrition-grid">
+                    <div class="input-group">
+                        <label for="foodProtein">Protein (g)</label>
+                        <input type="number" id="foodProtein" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="foodCarbs">Carbs (g)</label>
+                        <input type="number" id="foodCarbs" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="foodFat">Fat (g)</label>
+                        <input type="number" id="foodFat" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="foodFiber">Fiber (g)</label>
+                        <input type="number" id="foodFiber" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="foodSugar">Sugar (g)</label>
+                        <input type="number" id="foodSugar" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="foodWater">Water (ml)</label>
+                        <input type="number" id="foodWater" min="0" placeholder="0">
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="foodNotes">Notes (optional)</label>
-                    <textarea id="foodNotes" rows="3"></textarea>
+                    <textarea id="foodNotes" rows="2"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Add</button>
             </form>

@@ -4,6 +4,7 @@ let currentDate = new Date();
 let currentFilter = 'daily';
 let caloriesChart = null;
 let netCaloriesChart = null;
+let nutritionChart = null;
 let isFirebaseReady = false;
 
 // Data Structure
@@ -342,16 +343,24 @@ function updateFoodList(foodEntries) {
         return;
     }
 
-    foodList.innerHTML = foodEntries.map((food, index) => `
-        <div class="entry-item">
-            <div class="entry-info">
-                <div class="entry-name">${food.name}</div>
-                ${food.notes ? `<div class="entry-notes">${food.notes}</div>` : ''}
+    foodList.innerHTML = foodEntries.map((food, index) => {
+        const nutritionInfo = [];
+        if (food.protein) nutritionInfo.push(`P: ${food.protein}g`);
+        if (food.carbs) nutritionInfo.push(`C: ${food.carbs}g`);
+        if (food.fat) nutritionInfo.push(`F: ${food.fat}g`);
+        
+        return `
+            <div class="entry-item">
+                <div class="entry-info">
+                    <div class="entry-name">${food.name}</div>
+                    ${nutritionInfo.length > 0 ? `<div class="entry-nutrition">${nutritionInfo.join(' • ')}</div>` : ''}
+                    ${food.notes ? `<div class="entry-notes">${food.notes}</div>` : ''}
+                </div>
+                <div class="entry-calories">${food.calories} cal</div>
+                <button class="entry-delete" onclick="deleteFood(${index})">×</button>
             </div>
-            <div class="entry-calories">${food.calories} cal</div>
-            <button class="entry-delete" onclick="deleteFood(${index})">×</button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function updateExerciseList(exerciseEntries) {
@@ -383,26 +392,27 @@ async function updateSummary(dayData) {
     const remaining = settings.targetCalories - consumed + burned;
     const deficit = settings.maintenanceCalories - consumed + burned;
 
+    // Calculate nutrition totals
+    const totalProtein = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.protein || 0), 0) : 0;
+    const totalCarbs = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.carbs || 0), 0) : 0;
+    const totalFat = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.fat || 0), 0) : 0;
+    const totalFiber = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.fiber || 0), 0) : 0;
+    const totalSugar = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.sugar || 0), 0) : 0;
+    const totalWater = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.water || 0), 0) : 0;
+
     // Update display
     document.getElementById('targetCalories').textContent = settings.targetCalories;
     document.getElementById('consumedCalories').textContent = consumed;
     document.getElementById('burnedCalories').textContent = burned;
     document.getElementById('remainingCalories').textContent = remaining;
 
-    // Update status banner
-    const statusBanner = document.getElementById('statusBanner');
-    const statusText = document.getElementById('statusText');
-    
-    if (deficit > 0) {
-        statusBanner.className = 'status-banner success';
-        statusText.textContent = `${settings.maintenanceCalories} - ${consumed} + ${burned} = ${deficit} calories deficit today`;
-    } else if (deficit === 0) {
-        statusBanner.className = 'status-banner warning';
-        statusText.textContent = `${settings.maintenanceCalories} - ${consumed} + ${burned} = Maintenance calories achieved`;
-    } else {
-        statusBanner.className = 'status-banner danger';
-        statusText.textContent = `${settings.maintenanceCalories} - ${consumed} + ${burned} = ${Math.abs(deficit)} calories surplus today`;
-    }
+    // Update nutrition summary
+    document.getElementById('totalProtein').textContent = totalProtein.toFixed(1);
+    document.getElementById('totalCarbs').textContent = totalCarbs.toFixed(1);
+    document.getElementById('totalFat').textContent = totalFat.toFixed(1);
+    document.getElementById('totalFiber').textContent = totalFiber.toFixed(1);
+    document.getElementById('totalSugar').textContent = totalSugar.toFixed(1);
+    document.getElementById('totalWater').textContent = totalWater;
 }
 
 // Modal Handlers
@@ -433,6 +443,12 @@ async function handleAddFood(e) {
     const foodEntry = {
         name: document.getElementById('foodName').value,
         calories: Number(document.getElementById('foodCalories').value),
+        protein: Number(document.getElementById('foodProtein').value) || 0,
+        carbs: Number(document.getElementById('foodCarbs').value) || 0,
+        fat: Number(document.getElementById('foodFat').value) || 0,
+        fiber: Number(document.getElementById('foodFiber').value) || 0,
+        sugar: Number(document.getElementById('foodSugar').value) || 0,
+        water: Number(document.getElementById('foodWater').value) || 0,
         notes: document.getElementById('foodNotes').value,
         timestamp: new Date().toISOString()
     };
@@ -539,6 +555,9 @@ function getDailyData(data, startDate, endDate) {
     const consumed = [];
     const burned = [];
     const net = [];
+    const protein = [];
+    const carbs = [];
+    const fat = [];
 
     let currentDay = new Date(startDate);
     while (currentDay <= endDate) {
@@ -547,16 +566,22 @@ function getDailyData(data, startDate, endDate) {
         
         const consumedCal = dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         const burnedCal = dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);
+        const dayProtein = dayData.food.reduce((sum, f) => sum + Number(f.protein || 0), 0);
+        const dayCarbs = dayData.food.reduce((sum, f) => sum + Number(f.carbs || 0), 0);
+        const dayFat = dayData.food.reduce((sum, f) => sum + Number(f.fat || 0), 0);
         
         labels.push(dateKey);
         consumed.push(consumedCal);
         burned.push(burnedCal);
         net.push(consumedCal - burnedCal);
+        protein.push(dayProtein);
+        carbs.push(dayCarbs);
+        fat.push(dayFat);
 
         currentDay.setDate(currentDay.getDate() + 1);
     }
 
-    return { labels, consumed, burned, net };
+    return { labels, consumed, burned, net, protein, carbs, fat };
 }
 
 function getWeeklyData(data, startDate, endDate) {
@@ -568,7 +593,7 @@ function getWeeklyData(data, startDate, endDate) {
         const weekKey = formatDate(weekStart);
         
         if (!weeklyData[weekKey]) {
-            weeklyData[weekKey] = { consumed: 0, burned: 0, count: 0 };
+            weeklyData[weekKey] = { consumed: 0, burned: 0, protein: 0, carbs: 0, fat: 0, count: 0 };
         }
         
         const dateKey = formatDate(currentDay);
@@ -576,6 +601,9 @@ function getWeeklyData(data, startDate, endDate) {
         
         weeklyData[weekKey].consumed += dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         weeklyData[weekKey].burned += dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);
+        weeklyData[weekKey].protein += dayData.food.reduce((sum, f) => sum + Number(f.protein || 0), 0);
+        weeklyData[weekKey].carbs += dayData.food.reduce((sum, f) => sum + Number(f.carbs || 0), 0);
+        weeklyData[weekKey].fat += dayData.food.reduce((sum, f) => sum + Number(f.fat || 0), 0);
         weeklyData[weekKey].count++;
 
         currentDay.setDate(currentDay.getDate() + 1);
@@ -585,8 +613,11 @@ function getWeeklyData(data, startDate, endDate) {
     const consumed = Object.values(weeklyData).map(w => Math.round(w.consumed / w.count));
     const burned = Object.values(weeklyData).map(w => Math.round(w.burned / w.count));
     const net = consumed.map((c, i) => c - burned[i]);
+    const protein = Object.values(weeklyData).map(w => Math.round(w.protein / w.count));
+    const carbs = Object.values(weeklyData).map(w => Math.round(w.carbs / w.count));
+    const fat = Object.values(weeklyData).map(w => Math.round(w.fat / w.count));
 
-    return { labels, consumed, burned, net };
+    return { labels, consumed, burned, net, protein, carbs, fat };
 }
 
 function getMonthlyData(data, startDate, endDate) {
@@ -597,7 +628,7 @@ function getMonthlyData(data, startDate, endDate) {
         const monthKey = `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}`;
         
         if (!monthlyData[monthKey]) {
-            monthlyData[monthKey] = { consumed: 0, burned: 0, count: 0 };
+            monthlyData[monthKey] = { consumed: 0, burned: 0, protein: 0, carbs: 0, fat: 0, count: 0 };
         }
         
         const dateKey = formatDate(currentDay);
@@ -605,6 +636,9 @@ function getMonthlyData(data, startDate, endDate) {
         
         monthlyData[monthKey].consumed += dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         monthlyData[monthKey].burned += dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);
+        monthlyData[monthKey].protein += dayData.food.reduce((sum, f) => sum + Number(f.protein || 0), 0);
+        monthlyData[monthKey].carbs += dayData.food.reduce((sum, f) => sum + Number(f.carbs || 0), 0);
+        monthlyData[monthKey].fat += dayData.food.reduce((sum, f) => sum + Number(f.fat || 0), 0);
         monthlyData[monthKey].count++;
 
         currentDay.setDate(currentDay.getDate() + 1);
@@ -614,8 +648,11 @@ function getMonthlyData(data, startDate, endDate) {
     const consumed = Object.values(monthlyData).map(m => Math.round(m.consumed / m.count));
     const burned = Object.values(monthlyData).map(m => Math.round(m.burned / m.count));
     const net = consumed.map((c, i) => c - burned[i]);
+    const protein = Object.values(monthlyData).map(m => Math.round(m.protein / m.count));
+    const carbs = Object.values(monthlyData).map(m => Math.round(m.carbs / m.count));
+    const fat = Object.values(monthlyData).map(m => Math.round(m.fat / m.count));
 
-    return { labels, consumed, burned, net };
+    return { labels, consumed, burned, net, protein, carbs, fat };
 }
 
 function getWeekStart(date) {
@@ -761,6 +798,82 @@ function renderCharts(chartData) {
             }
         }
     });
+
+    // Nutrition Chart (Macros)
+    const ctx3 = document.getElementById('nutritionChart').getContext('2d');
+    if (nutritionChart) {
+        nutritionChart.destroy();
+    }
+    nutritionChart = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [
+                {
+                    label: 'Protein (g)',
+                    data: chartData.protein,
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Carbs (g)',
+                    data: chartData.carbs,
+                    backgroundColor: 'rgba(251, 191, 36, 0.7)',
+                    borderColor: 'rgb(251, 191, 36)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Fat (g)',
+                    data: chartData.fat,
+                    backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                    borderColor: 'rgb(236, 72, 153)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: isMobile ? 1 : 2,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Macronutrients (Protein, Carbs, Fat)',
+                    font: { size: isMobile ? 14 : 16, weight: 'bold' }
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        boxWidth: isMobile ? 12 : 40,
+                        padding: isMobile ? 10 : 15,
+                        font: { size: isMobile ? 11 : 12 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 },
+                        maxRotation: isMobile ? 45 : 0,
+                        minRotation: isMobile ? 45 : 0
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: !isMobile,
+                        text: 'Grams',
+                        font: { size: isMobile ? 10 : 12 }
+                    },
+                    ticks: {
+                        font: { size: isMobile ? 10 : 12 }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Handle window resize for charts
@@ -769,7 +882,7 @@ window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
         const currentPage = document.querySelector('.app-page.active').id;
-        if (currentPage === 'reportsPage' && caloriesChart && netCaloriesChart) {
+        if (currentPage === 'reportsPage' && caloriesChart && netCaloriesChart && nutritionChart) {
             updateReports();
         }
     }, 250);
