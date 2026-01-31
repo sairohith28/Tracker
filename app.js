@@ -25,7 +25,15 @@ function waitForFirebase() {
             isFirebaseReady = true;
             resolve();
         } else {
+            // Set a timeout to prevent infinite loading
+            const timeout = setTimeout(() => {
+                console.warn('Firebase initialization timed out, continuing without Firebase');
+                isFirebaseReady = false;
+                resolve();
+            }, 5000); // 5 second timeout
+
             window.addEventListener('firebase-ready', () => {
+                clearTimeout(timeout);
                 isFirebaseReady = true;
                 resolve();
             }, { once: true });
@@ -38,15 +46,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show loading state
     showLoadingState();
     
-    // Wait for Firebase
-    await waitForFirebase();
-    
-    await initializeData();
-    checkAuth();
-    setupEventListeners();
-    
-    // Hide loading state
-    hideLoadingState();
+    try {
+        // Wait for Firebase with timeout
+        await waitForFirebase();
+        
+        await initializeData();
+        checkAuth();
+        setupEventListeners();
+    } catch (error) {
+        console.error('Initialization error:', error);
+        // Continue anyway with localStorage fallback
+        await initializeData();
+        checkAuth();
+        setupEventListeners();
+    } finally {
+        // Always hide loading state
+        hideLoadingState();
+    }
 });
 
 function showLoadingState() {
