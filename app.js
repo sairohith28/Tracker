@@ -116,8 +116,33 @@ async function saveData(data) {
 // Data Management
 async function initializeData() {
     const data = await getData();
-    if (!data.users || !data.settings || !data.entries) {
-        await saveData(defaultData);
+    
+    // Ensure all required properties exist
+    let needsSave = false;
+    
+    if (!data.users) {
+        data.users = defaultData.users;
+        needsSave = true;
+    }
+    
+    if (!data.settings) {
+        data.settings = defaultData.settings;
+        needsSave = true;
+    }
+    
+    if (!data.entries) {
+        data.entries = defaultData.entries;
+        needsSave = true;
+    }
+    
+    // Ensure default user exists
+    if (!data.users['hitty']) {
+        data.users['hitty'] = '1234';
+        needsSave = true;
+    }
+    
+    if (needsSave) {
+        await saveData(data);
     }
 }
 
@@ -149,7 +174,6 @@ function showMainApp() {
 function setupEventListeners() {
     // Login
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
     // Navigation
@@ -220,7 +244,6 @@ async function handleLogin(e) {
     if (data.users[username] && data.users[username] === password) {
         currentUser = username;
         sessionStorage.setItem('loggedInUser', username);
-        sessionStorage.setItem('loginMethod', 'traditional');
         document.getElementById('loginError').textContent = '';
         showMainApp();
     } else {
@@ -228,59 +251,9 @@ async function handleLogin(e) {
     }
 }
 
-// Google Sign-In Handler
-async function handleGoogleSignIn() {
-    if (!window.auth || !window.googleProvider) {
-        alert('Google Sign-In is not available. Please try again later.');
-        return;
-    }
-
-    try {
-        const { signInWithPopup } = window.authModules;
-        const result = await signInWithPopup(window.auth, window.googleProvider);
-        const user = result.user;
-        
-        // Store user info
-        currentUser = user.email;
-        sessionStorage.setItem('loggedInUser', user.email);
-        sessionStorage.setItem('loginMethod', 'google');
-        sessionStorage.setItem('displayName', user.displayName);
-        sessionStorage.setItem('photoURL', user.photoURL);
-        
-        document.getElementById('loginError').textContent = '';
-        showMainApp();
-    } catch (error) {
-        console.error('Google Sign-In Error:', error);
-        let errorMessage = 'Failed to sign in with Google. Please try again.';
-        
-        if (error.code === 'auth/popup-blocked') {
-            errorMessage = 'Popup was blocked. Please allow popups for this site.';
-        } else if (error.code === 'auth/popup-closed-by-user') {
-            errorMessage = 'Sign-in cancelled.';
-        }
-        
-        document.getElementById('loginError').textContent = errorMessage;
-    }
-}
-
 // Logout Handler
-async function handleLogout() {
-    const loginMethod = sessionStorage.getItem('loginMethod');
-    
-    // If logged in with Google, sign out from Firebase
-    if (loginMethod === 'google' && window.auth) {
-        try {
-            const { signOut } = window.authModules;
-            await signOut(window.auth);
-        } catch (error) {
-            console.error('Sign out error:', error);
-        }
-    }
-    
+function handleLogout() {
     sessionStorage.removeItem('loggedInUser');
-    sessionStorage.removeItem('loginMethod');
-    sessionStorage.removeItem('displayName');
-    sessionStorage.removeItem('photoURL');
     currentUser = null;
     showLoginPage();
     document.getElementById('loginForm').reset();
