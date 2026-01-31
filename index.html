@@ -14,20 +14,27 @@
     
     <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
-        import { firebaseConfig } from "./firebase-config.js";
+        try {
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js");
+            const { getFirestore, doc, getDoc, setDoc, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js");
+            const { firebaseConfig } = await import("./firebase-config.js");
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        // Make Firebase modules available globally
-        window.db = db;
-        window.firestoreModules = { doc, getDoc, setDoc, collection, getDocs };
-        
-        // Signal that Firebase is ready
-        window.firebaseReady = true;
-        window.dispatchEvent(new Event('firebase-ready'));
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            
+            // Make Firebase modules available globally
+            window.db = db;
+            window.firestoreModules = { doc, getDoc, setDoc, collection, getDocs };
+            
+            // Signal that Firebase is ready
+            window.firebaseReady = true;
+            window.dispatchEvent(new Event('firebase-ready'));
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            // Signal that we tried but failed
+            window.firebaseReady = false;
+            window.dispatchEvent(new Event('firebase-ready'));
+        }
     </script>
 </head>
 <body>
