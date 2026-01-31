@@ -12,6 +12,10 @@ const defaultData = {
     users: {
         'hitty': '1234' // Default username and password
     },
+    userData: {} // Per-user data: { username: { settings: {...}, entries: {...} } }
+};
+
+const defaultUserData = {
     settings: {
         maintenanceCalories: 2500,
         targetCalories: 1800
@@ -142,13 +146,8 @@ async function initializeData() {
         needsSave = true;
     }
     
-    if (!data.settings) {
-        data.settings = defaultData.settings;
-        needsSave = true;
-    }
-    
-    if (!data.entries) {
-        data.entries = defaultData.entries;
+    if (!data.userData) {
+        data.userData = {};
         needsSave = true;
     }
     
@@ -163,10 +162,34 @@ async function initializeData() {
     }
 }
 
+// Get current user's data (settings and entries)
+async function getUserData() {
+    const data = await getData();
+    if (!data.userData[currentUser]) {
+        data.userData[currentUser] = JSON.parse(JSON.stringify(defaultUserData));
+        await saveData(data);
+    }
+    return data.userData[currentUser];
+}
+
+// Save current user's data
+async function saveUserData(userData) {
+    const data = await getData();
+    data.userData[currentUser] = userData;
+    await saveData(data);
+}
+
 // Authentication
 function checkAuth() {
+    // Check localStorage first (remembered user), then sessionStorage
+    const rememberedUser = localStorage.getItem('rememberedUser');
     const loggedInUser = sessionStorage.getItem('loggedInUser');
-    if (loggedInUser) {
+    
+    if (rememberedUser) {
+        currentUser = rememberedUser;
+        sessionStorage.setItem('loggedInUser', rememberedUser);
+        showMainApp();
+    } else if (loggedInUser) {
         currentUser = loggedInUser;
         showMainApp();
     } else {
@@ -189,9 +212,22 @@ function showMainApp() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Login
+    // Login & Register
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    
+    // Toggle between login and register
+    document.getElementById('showRegister').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.login-card:not(.register-card)').style.display = 'none';
+        document.getElementById('registerCard').style.display = 'block';
+    });
+    document.getElementById('showLogin').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.login-card:not(.register-card)').style.display = 'block';
+        document.getElementById('registerCard').style.display = 'none';
+    });
 
     // Navigation
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -254,13 +290,20 @@ function setupEventListeners() {
 // Login Handler
 async function handleLogin(e) {
     e.preventDefault();
-    const username = document.getElementById('username').value;
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
     const data = await getData();
 
     if (data.users[username] && data.users[username] === password) {
         currentUser = username;
         sessionStorage.setItem('loggedInUser', username);
+        
+        // Remember user if checkbox is checked
+        if (rememberMe) {
+            localStorage.setItem('rememberedUser', username);
+        }
+        
         document.getElementById('loginError').textContent = '';
         showMainApp();
     } else {
@@ -268,12 +311,65 @@ async function handleLogin(e) {
     }
 }
 
+// Register Handler
+async function handleRegister(e) {
+    e.preventDefault();
+    const username = document.getElementById('regUsername').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    
+    const errorEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+    
+    // Validation
+    if (username.length < 3) {
+        errorEl.textContent = 'Username must be at least 3 characters';
+        return;
+    }
+    
+    if (password.length < 4) {
+        errorEl.textContent = 'Password must be at least 4 characters';
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match';
+        return;
+    }
+    
+    const data = await getData();
+    
+    // Check if username already exists
+    if (data.users[username]) {
+        errorEl.textContent = 'Username already exists';
+        return;
+    }
+    
+    // Create new user
+    data.users[username] = password;
+    await saveData(data);
+    
+    successEl.textContent = 'Account created! You can now login.';
+    document.getElementById('registerForm').reset();
+    
+    // Switch to login after 2 seconds
+    setTimeout(() => {
+        document.querySelector('.login-card:not(.register-card)').style.display = 'block';
+        document.getElementById('registerCard').style.display = 'none';
+        successEl.textContent = '';
+    }, 2000);
+}
+
 // Logout Handler
 function handleLogout() {
     sessionStorage.removeItem('loggedInUser');
+    localStorage.removeItem('rememberedUser');
     currentUser = null;
     showLoginPage();
     document.getElementById('loginForm').reset();
+    document.getElementById('rememberMe').checked = false;
 }
 
 // Page Navigation
@@ -322,8 +418,8 @@ function formatDate(date) {
 // Tracker Update
 async function updateTracker() {
     const dateKey = formatDate(currentDate);
-    const data = await getData();
-    const dayData = data.entries[dateKey] || { food: [], exercise: [] };
+    const userData = await getUserData();
+    const dayData = userData.entries[dateKey] || { food: [], exercise: [] };
 
     // Update food list
     updateFoodList(dayData.food);
@@ -332,7 +428,7 @@ async function updateTracker() {
     updateExerciseList(dayData.exercise);
 
     // Update summary
-    updateSummary(dayData);
+    updateSummary(dayData, userData.settings);
 }
 
 function updateFoodList(foodEntries) {
@@ -351,13 +447,16 @@ function updateFoodList(foodEntries) {
         
         return `
             <div class="entry-item">
-                <div class="entry-info">
+                <div class="entry-info" onclick="editFood(${index})">
                     <div class="entry-name">${food.name}</div>
                     ${nutritionInfo.length > 0 ? `<div class="entry-nutrition">${nutritionInfo.join(' • ')}</div>` : ''}
                     ${food.notes ? `<div class="entry-notes">${food.notes}</div>` : ''}
                 </div>
                 <div class="entry-calories">${food.calories} cal</div>
-                <button class="entry-delete" onclick="deleteFood(${index})">×</button>
+                <div class="entry-actions">
+                    <button class="entry-edit" onclick="editFood(${index})">✎</button>
+                    <button class="entry-delete" onclick="deleteFood(${index})">×</button>
+                </div>
             </div>
         `;
     }).join('');
@@ -373,20 +472,20 @@ function updateExerciseList(exerciseEntries) {
 
     exerciseList.innerHTML = exerciseEntries.map((exercise, index) => `
         <div class="entry-item">
-            <div class="entry-info">
+            <div class="entry-info" onclick="editExercise(${index})">
                 <div class="entry-name">${exercise.name}</div>
                 ${exercise.notes ? `<div class="entry-notes">${exercise.notes}</div>` : ''}
             </div>
             <div class="entry-calories">${exercise.calories} cal</div>
-            <button class="entry-delete" onclick="deleteExercise(${index})">×</button>
+            <div class="entry-actions">
+                <button class="entry-edit" onclick="editExercise(${index})">✎</button>
+                <button class="entry-delete" onclick="deleteExercise(${index})">×</button>
+            </div>
         </div>
     `).join('');
 }
 
-async function updateSummary(dayData) {
-    const data = await getData();
-    const settings = data.settings;
-    
+async function updateSummary(dayData, settings) {
     const consumed = dayData.food ? dayData.food.reduce((sum, f) => sum + Number(f.calories), 0) : 0;
     const burned = dayData.exercise ? dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0) : 0;
     const remaining = settings.targetCalories - consumed + burned;
@@ -422,22 +521,28 @@ function openModal(modalId) {
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
-    // Reset forms
+    // Reset forms and edit state
     if (modalId === 'foodModal') {
         document.getElementById('foodForm').reset();
+        document.querySelector('#foodModal .modal-header h2').textContent = 'Add Food';
+        editingFoodIndex = null;
     } else if (modalId === 'exerciseModal') {
         document.getElementById('exerciseForm').reset();
+        document.querySelector('#exerciseModal .modal-header h2').textContent = 'Add Exercise';
+        editingExerciseIndex = null;
     }
 }
 
 // Food Handlers
+let editingFoodIndex = null;
+
 async function handleAddFood(e) {
     e.preventDefault();
     const dateKey = formatDate(currentDate);
-    const data = await getData();
+    const userData = await getUserData();
 
-    if (!data.entries[dateKey]) {
-        data.entries[dateKey] = { food: [], exercise: [] };
+    if (!userData.entries[dateKey]) {
+        userData.entries[dateKey] = { food: [], exercise: [] };
     }
 
     const foodEntry = {
@@ -453,8 +558,16 @@ async function handleAddFood(e) {
         timestamp: new Date().toISOString()
     };
 
-    data.entries[dateKey].food.push(foodEntry);
-    await saveData(data);
+    if (editingFoodIndex !== null) {
+        // Update existing entry
+        userData.entries[dateKey].food[editingFoodIndex] = foodEntry;
+        editingFoodIndex = null;
+    } else {
+        // Add new entry
+        userData.entries[dateKey].food.push(foodEntry);
+    }
+    
+    await saveUserData(userData);
     closeModal('foodModal');
     await updateTracker();
 }
@@ -462,21 +575,46 @@ async function handleAddFood(e) {
 async function deleteFood(index) {
     if (confirm('Delete this food entry?')) {
         const dateKey = formatDate(currentDate);
-        const data = await getData();
-        data.entries[dateKey].food.splice(index, 1);
-        await saveData(data);
+        const userData = await getUserData();
+        userData.entries[dateKey].food.splice(index, 1);
+        await saveUserData(userData);
         await updateTracker();
     }
 }
 
+async function editFood(index) {
+    const dateKey = formatDate(currentDate);
+    const userData = await getUserData();
+    const food = userData.entries[dateKey].food[index];
+    
+    // Fill form with existing data
+    document.getElementById('foodName').value = food.name;
+    document.getElementById('foodCalories').value = food.calories;
+    document.getElementById('foodProtein').value = food.protein || '';
+    document.getElementById('foodCarbs').value = food.carbs || '';
+    document.getElementById('foodFat').value = food.fat || '';
+    document.getElementById('foodFiber').value = food.fiber || '';
+    document.getElementById('foodSugar').value = food.sugar || '';
+    document.getElementById('foodWater').value = food.water || '';
+    document.getElementById('foodNotes').value = food.notes || '';
+    
+    editingFoodIndex = index;
+    
+    // Change modal title
+    document.querySelector('#foodModal .modal-header h2').textContent = 'Edit Food';
+    openModal('foodModal');
+}
+
 // Exercise Handlers
+let editingExerciseIndex = null;
+
 async function handleAddExercise(e) {
     e.preventDefault();
     const dateKey = formatDate(currentDate);
-    const data = await getData();
+    const userData = await getUserData();
 
-    if (!data.entries[dateKey]) {
-        data.entries[dateKey] = { food: [], exercise: [] };
+    if (!userData.entries[dateKey]) {
+        userData.entries[dateKey] = { food: [], exercise: [] };
     }
 
     const exerciseEntry = {
@@ -486,8 +624,16 @@ async function handleAddExercise(e) {
         timestamp: new Date().toISOString()
     };
 
-    data.entries[dateKey].exercise.push(exerciseEntry);
-    await saveData(data);
+    if (editingExerciseIndex !== null) {
+        // Update existing entry
+        userData.entries[dateKey].exercise[editingExerciseIndex] = exerciseEntry;
+        editingExerciseIndex = null;
+    } else {
+        // Add new entry
+        userData.entries[dateKey].exercise.push(exerciseEntry);
+    }
+    
+    await saveUserData(userData);
     closeModal('exerciseModal');
     await updateTracker();
 }
@@ -495,25 +641,42 @@ async function handleAddExercise(e) {
 async function deleteExercise(index) {
     if (confirm('Delete this exercise entry?')) {
         const dateKey = formatDate(currentDate);
-        const data = await getData();
-        data.entries[dateKey].exercise.splice(index, 1);
-        await saveData(data);
+        const userData = await getUserData();
+        userData.entries[dateKey].exercise.splice(index, 1);
+        await saveUserData(userData);
         await updateTracker();
     }
 }
 
+async function editExercise(index) {
+    const dateKey = formatDate(currentDate);
+    const userData = await getUserData();
+    const exercise = userData.entries[dateKey].exercise[index];
+    
+    // Fill form with existing data
+    document.getElementById('exerciseName').value = exercise.name;
+    document.getElementById('exerciseCalories').value = exercise.calories;
+    document.getElementById('exerciseNotes').value = exercise.notes || '';
+    
+    editingExerciseIndex = index;
+    
+    // Change modal title
+    document.querySelector('#exerciseModal .modal-header h2').textContent = 'Edit Exercise';
+    openModal('exerciseModal');
+}
+
 // Settings Handlers
 async function loadSettings() {
-    const data = await getData();
-    document.getElementById('maintenanceCalories').value = data.settings.maintenanceCalories;
-    document.getElementById('targetCaloriesInput').value = data.settings.targetCalories;
+    const userData = await getUserData();
+    document.getElementById('maintenanceCalories').value = userData.settings.maintenanceCalories;
+    document.getElementById('targetCaloriesInput').value = userData.settings.targetCalories;
 }
 
 async function saveSettings() {
-    const data = await getData();
-    data.settings.maintenanceCalories = Number(document.getElementById('maintenanceCalories').value);
-    data.settings.targetCalories = Number(document.getElementById('targetCaloriesInput').value);
-    await saveData(data);
+    const userData = await getUserData();
+    userData.settings.maintenanceCalories = Number(document.getElementById('maintenanceCalories').value);
+    userData.settings.targetCalories = Number(document.getElementById('targetCaloriesInput').value);
+    await saveUserData(userData);
     
     const successMsg = document.getElementById('settingsSuccess');
     successMsg.textContent = 'Settings saved successfully!';
@@ -533,36 +696,7 @@ function handleFilterChange(e) {
     currentFilter = e.target.dataset.filter;
 }
 
-async function updateReports() {
-    const startDate = new Date(document.getElementById('reportStartDate').value);
-    const endDate = new Date(document.getElementById('reportEndDate').value);
-    const data = await getData();
-
-    let chartData;
-    if (currentFilter === 'daily') {
-        chartData = getDailyData(data, startDate, endDate);
-    } else if (currentFilter === 'weekly') {
-        chartData = getWeeklyData(data, startDate, endDate);
-    } else {
-        chartData = getMonthlyData(data, startDate, endDate);
-    }
-
-    renderCharts(chartData);
-}
-
-function getDailyData(data, startDate, endDate) {
-    const labels = [];
-    const consumed = [];
-    const burned = [];
-    const net = [];
-    const protein = [];
-    const carbs = [];
-    const fat = [];
-
-    let currentDay = new Date(startDate);
-    while (currentDay <= endDate) {
-        const dateKey = formatDate(currentDay);
-        const dayData = data.entries[dateKey] || { food: [], exercise: [] };
+async function updateReports() {    const startDate = new Date(document.getElementById('reportStartDate').value);    const endDate = new Date(document.getElementById('reportEndDate').value);    const userData = await getUserData();    let chartData;    if (currentFilter === 'daily') {        chartData = getDailyData(userData, startDate, endDate);    } else if (currentFilter === 'weekly') {        chartData = getWeeklyData(userData, startDate, endDate);    } else {        chartData = getMonthlyData(userData, startDate, endDate);    }    renderCharts(chartData);}function getDailyData(userData, startDate, endDate) {    const labels = [];    const consumed = [];    const burned = [];    const net = [];    const protein = [];    const carbs = [];    const fat = [];    let currentDay = new Date(startDate);    while (currentDay <= endDate) {        const dateKey = formatDate(currentDay);        const dayData = userData.entries[dateKey] || { food: [], exercise: [] };
         
         const consumedCal = dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         const burnedCal = dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);
@@ -584,7 +718,7 @@ function getDailyData(data, startDate, endDate) {
     return { labels, consumed, burned, net, protein, carbs, fat };
 }
 
-function getWeeklyData(data, startDate, endDate) {
+function getWeeklyData(userData, startDate, endDate) {
     const weeklyData = {};
     
     let currentDay = new Date(startDate);
@@ -597,7 +731,7 @@ function getWeeklyData(data, startDate, endDate) {
         }
         
         const dateKey = formatDate(currentDay);
-        const dayData = data.entries[dateKey] || { food: [], exercise: [] };
+        const dayData = userData.entries[dateKey] || { food: [], exercise: [] };
         
         weeklyData[weekKey].consumed += dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         weeklyData[weekKey].burned += dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);
@@ -620,7 +754,7 @@ function getWeeklyData(data, startDate, endDate) {
     return { labels, consumed, burned, net, protein, carbs, fat };
 }
 
-function getMonthlyData(data, startDate, endDate) {
+function getMonthlyData(userData, startDate, endDate) {
     const monthlyData = {};
     
     let currentDay = new Date(startDate);
@@ -632,7 +766,7 @@ function getMonthlyData(data, startDate, endDate) {
         }
         
         const dateKey = formatDate(currentDay);
-        const dayData = data.entries[dateKey] || { food: [], exercise: [] };
+        const dayData = userData.entries[dateKey] || { food: [], exercise: [] };
         
         monthlyData[monthKey].consumed += dayData.food.reduce((sum, f) => sum + Number(f.calories), 0);
         monthlyData[monthKey].burned += dayData.exercise.reduce((sum, e) => sum + Number(e.calories), 0);

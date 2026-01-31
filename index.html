@@ -55,9 +55,45 @@
                         <label for="password">Password</label>
                         <input type="password" id="password" required autocomplete="current-password">
                     </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">Remember me</label>
+                    </div>
                     <button type="submit" class="btn btn-primary">Login</button>
                     <p class="error-message" id="loginError"></p>
                 </form>
+                
+                <div class="auth-switch">
+                    <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+                </div>
+            </div>
+            
+            <!-- Register Card -->
+            <div class="login-card register-card" id="registerCard" style="display: none;">
+                <h1>Create Account</h1>
+                <p class="subtitle">Join Calorie Tracker today</p>
+                
+                <form id="registerForm">
+                    <div class="input-group">
+                        <label for="regUsername">Username</label>
+                        <input type="text" id="regUsername" required minlength="3" autocomplete="username">
+                    </div>
+                    <div class="input-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" required minlength="4" autocomplete="new-password">
+                    </div>
+                    <div class="input-group">
+                        <label for="regConfirmPassword">Confirm Password</label>
+                        <input type="password" id="regConfirmPassword" required minlength="4" autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                    <p class="error-message" id="registerError"></p>
+                    <p class="success-message" id="registerSuccess"></p>
+                </form>
+                
+                <div class="auth-switch">
+                    <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+                </div>
             </div>
         </div>
     </div>
