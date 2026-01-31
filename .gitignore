@@ -13,3 +13,29 @@ firebase-config.js
 .idea/
 *.swp
 *.swo
+# Android
+android/
+node_modules/
+dist/
+
+# Capacitor
+.capacitor/
+ios/
+
+# Build outputs
+*.apk
+*.aab
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Package files
+package-lock.json

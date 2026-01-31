@@ -1,0 +1,6 @@
+{
+  "appId": "com.hitty.calorietracker",
+  "appName": "Calorie Tracker",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
