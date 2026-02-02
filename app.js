@@ -272,6 +272,7 @@ function setupEventListeners() {
 
     // Settings
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+    document.getElementById('calculateBmiBtn').addEventListener('click', calculateBMI);
 
     // Reports
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -426,6 +427,9 @@ async function updateTracker() {
     
     // Update exercise list
     updateExerciseList(dayData.exercise);
+
+    // Update streak
+    await updateStreak();
 
     // Update summary
     updateSummary(dayData, userData.settings);
@@ -685,6 +689,83 @@ async function saveSettings() {
     }, 3000);
 
     await updateTracker();
+}
+
+// BMI Calculator
+function calculateBMI() {
+    const weight = parseFloat(document.getElementById('bmiWeight').value);
+    const height = parseFloat(document.getElementById('bmiHeight').value);
+    
+    if (!weight || !height || weight <= 0 || height <= 0) {
+        alert('Please enter valid weight and height');
+        return;
+    }
+    
+    const heightInMeters = height / 100;
+    const bmi = weight / (heightInMeters * heightInMeters);
+    const bmiRounded = bmi.toFixed(1);
+    
+    let category = '';
+    let categoryClass = '';
+    
+    if (bmi < 18.5) {
+        category = 'Underweight';
+        categoryClass = 'bmi-underweight';
+    } else if (bmi < 25) {
+        category = 'Normal weight';
+        categoryClass = 'bmi-normal';
+    } else if (bmi < 30) {
+        category = 'Overweight';
+        categoryClass = 'bmi-overweight';
+    } else {
+        category = 'Obese';
+        categoryClass = 'bmi-obese';
+    }
+    
+    document.getElementById('bmiValue').textContent = bmiRounded;
+    document.getElementById('bmiCategory').textContent = category;
+    document.getElementById('bmiCategory').className = 'bmi-category ' + categoryClass;
+    document.getElementById('bmiResult').style.display = 'block';
+}
+
+// Streak Calculator
+async function calculateStreak() {
+    const userData = await getUserData();
+    const entries = userData.entries || {};
+    
+    let streak = 0;
+    let checkDate = new Date();
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Start checking from yesterday (today might not be complete)
+    checkDate.setDate(checkDate.getDate() - 1);
+    
+    while (true) {
+        const dateKey = formatDate(checkDate);
+        const dayData = entries[dateKey];
+        
+        // Check if there's any food entry for this day
+        if (dayData && dayData.food && dayData.food.length > 0) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    
+    // Check if today has entries - if so, add 1 to streak
+    const todayKey = formatDate(new Date());
+    const todayData = entries[todayKey];
+    if (todayData && todayData.food && todayData.food.length > 0) {
+        streak++;
+    }
+    
+    return streak;
+}
+
+async function updateStreak() {
+    const streak = await calculateStreak();
+    document.getElementById('streakCount').textContent = streak;
 }
 
 // Reports Handlers

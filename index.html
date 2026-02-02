@@ -102,7 +102,7 @@
     <div id="mainApp" class="page">
         <!-- Navigation -->
         <nav class="navbar">
-            <div class="nav-brand">Calorie Tracker</div>
+            <div class="nav-brand">Calorie Tracker <span class="streak-badge" id="streakBadge">🔥<span id="streakCount">0</span></span></div>
             <div class="nav-links">
                 <a href="#" class="nav-link active" data-page="tracker">Tracker</a>
                 <a href="#" class="nav-link" data-page="reports">Reports</a>
@@ -245,6 +245,24 @@
                     </div>
                     <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
                     <p class="success-message" id="settingsSuccess"></p>
+                </div>
+
+                <!-- BMI Calculator -->
+                <div class="settings-card">
+                    <h2>BMI Calculator</h2>
+                    <div class="input-group">
+                        <label for="bmiWeight">Weight (kg)</label>
+                        <input type="number" id="bmiWeight" placeholder="e.g., 70" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="bmiHeight">Height (cm)</label>
+                        <input type="number" id="bmiHeight" placeholder="e.g., 175">
+                    </div>
+                    <button class="btn btn-primary" id="calculateBmiBtn">Calculate BMI</button>
+                    <div class="bmi-result" id="bmiResult" style="display: none;">
+                        <div class="bmi-value" id="bmiValue">0</div>
+                        <div class="bmi-category" id="bmiCategory">Normal</div>
+                    </div>
                 </div>
             </div>
         </div>
