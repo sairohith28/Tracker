@@ -326,6 +326,18 @@ body {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+/* Streak Badge */
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-left: 0.4rem;
+    vertical-align: middle;
+}
+
 /* Date Selector - Mobile First */
 .date-selector {
     display: flex;
@@ -820,12 +832,57 @@ body {
     border-radius: 8px;
     box-shadow: var(--shadow);
     max-width: 600px;
+    margin-bottom: 1.5rem;
 }
 
 .settings-card h2 {
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 1.5rem;
+}
+
+/* BMI Result */
+.bmi-result {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: var(--background);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.bmi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.bmi-category {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.bmi-underweight {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.bmi-normal {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.bmi-overweight {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.bmi-obese {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 @media (min-width: 768px) {
